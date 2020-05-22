@@ -99,32 +99,10 @@ defimpl Jason.Encoder, for: Any do
     {name, [generated: true], context}
   end
 
-  def encode(%_{} = struct, _opts) do
-    raise Protocol.UndefinedError,
-      protocol: @protocol,
-      value: struct,
-      description: """
-      Jason.Encoder protocol must always be explicitly implemented.
-
-      If you own the struct, you can derive the implementation specifying \
-      which fields should be encoded to JSON:
-
-          @derive {Jason.Encoder, only: [....]}
-          defstruct ...
-
-      It is also possible to encode all fields, although this should be \
-      used carefully to avoid accidentally leaking private information \
-      when new fields are added:
-
-          @derive Jason.Encoder
-          defstruct ...
-
-      Finally, if you don't own the struct you want to encode to JSON, \
-      you may use Protocol.derive/3 placed outside of any module:
-
-          Protocol.derive(Jason.Encoder, NameOfTheStruct, only: [...])
-          Protocol.derive(Jason.Encoder, NameOfTheStruct)
-      """
+  def encode(%_{} = struct, opts) do
+    struct
+    |> Map.from_struct()
+    |> Jason.Encode.map(opts)
   end
 
   def encode(value, _opts) do
@@ -212,5 +190,13 @@ end
 defimpl Jason.Encoder, for: Jason.Fragment do
   def encode(%{encode: encode}, opts) do
     encode.(opts)
+  end
+end
+
+defimpl Jason.Encoder, for: Tuple do
+  def encode(tuple, opts) do
+    tuple
+    |> Tuple.to_list()
+    |> Jason.Encode.list(opts)
   end
 end
